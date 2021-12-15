@@ -1,0 +1,35 @@
+{% extends 'basic.html' %}
+
+{% block content %}
+<form method="POSt">
+    {% csrf_token %}
+    {% if not title == "" %}
+        <h1>Данные в папке {{ title }}</h1>
+    {% endif %}
+    <input type="text" name="titleName" style="display:none;" value='{{ title }}'/>
+    <table class="maintable" bordercolor="darkgray" cellspacing="2" cellpadding="15" border="1" width="100%">
+        <tr class="mainTablePart">
+            <td>Выбрать</td>
+            <td>Название</td>
+            <td>Дата/время добавления</td>
+            <td>Статус</td>
+            <td>Последнее обновление</td>
+        </tr>  
+        {% for obj in data %}
+            <tr>
+                <td><input type="checkbox" name="dataList" value={{ obj.id }}></td>
+                <td>{{ obj.app_name }}</td>
+                <td>{{ obj.start_time }}</td>
+                {% if obj.status == "Опубликован" %}
+                    <td>{{ obj.status }}<span id="accept">&#x2714;</span></td>
+                {% else %}
+                    <td>{{ obj.status }}<span id="cancel">&#x2716;</span></td>
+                {% endif %}
+                <td>{{ obj.last_time }}</td>
+            </tr>  
+        {% endfor %}
+    </table>
+    <input class="buttonDel" formaction="\" type="submit" value="Удалить">
+    <!--<input formaction="update" type="submit" value="Обновить">-->
+</form>
+{% endblock %}

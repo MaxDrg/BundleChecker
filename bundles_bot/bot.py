@@ -1,0 +1,306 @@
+import asyncio
+import logging
+import aioschedule
+import datetime
+from config import Config
+from database import Database
+from buttons import Button
+from track import Track
+from states import States
+from aiogram import executor, types
+from config import Config
+from url import Web
+from pytz import timezone
+from aiogram.dispatcher import FSMContext
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+cfg = Config()
+btn = Button()
+db = Database()
+
+# first
+@cfg.dp.message_handler(commands="start")
+async def Start(message: types.Message):
+    if await checkUser(message.from_user.id):
+        await cfg.bot.send_message(message.from_user.id, "Привет {}!\nЭтот бот".format(message.from_user.first_name) +
+        " создан для отслеживания работы приложений в Google Play Market", reply_markup=btn.markup)
+        await States.menu.set()
+    else:
+        await cfg.bot.send_message(message.from_user.id, "Привет {}!\nК сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+@cfg.dp.message_handler(lambda message: message.text == 'Приложения и папки', state=States.menu) 
+async def folders_apps(message: types.Message):
+    if await checkUser(message.from_user.id):
+        await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
+        "\n\nСписок папок:{}".format(await printList()), 
+        reply_markup=btn.choose_folder)
+        await States.setFolder.set()
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+@cfg.dp.message_handler(lambda message: message.text == 'Обновить', state=States.menu) 
+async def update(message: types.Message):
+    if await checkUser(message.from_user.id):
+        await Track.update()
+        await cfg.bot.send_message(message.from_user.id, "Статусы приложений обновлены!")
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+@cfg.dp.message_handler(lambda message: message.text == 'Вывести данные', state=States.menu) 
+async def print(message: types.Message):
+    if await checkUser(message.from_user.id):
+        await cfg.bot.send_message(message.from_user.id, "Введите номер папки данные которой хотите вывести" + 
+        "\n\nСписок папок:{}".format(await printList()), 
+        reply_markup=btn.back)
+        await States.setOpenFolder.set()
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+@cfg.dp.message_handler(lambda message: message.text == 'Пользователи', state=States.menu) 
+async def users(message: types.Message):
+    if await checkUser(message.from_user.id):
+        await cfg.bot.send_message(message.from_user.id, "Выберите операцию над пользователями:", reply_markup=btn.user_markup)
+        await States.users.set()
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+# second
+
+@cfg.dp.message_handler(state=States.setFolder) 
+async def setFolder(message: types.Message):
+    if await checkUser(message.from_user.id):
+        if message.text == "Создать новую папку":
+            await cfg.bot.send_message(message.from_user.id, "Введите название новой папки:", 
+            reply_markup=btn.back)
+            await States.addFolder.set()
+        elif message.text == "Удалить папку":
+            await cfg.bot.send_message(message.from_user.id, "Введите номер папки, которую хотите удалить" + 
+            f"\n\nСписок папок: {await printList()}\n\nВнимание, при удалении папки, удаляется всё её содержимое!", 
+            reply_markup=btn.back)
+            await States.delFolder.set()
+        elif message.text == "Вернуться назад":
+            await cfg.bot.send_message(message.from_user.id, "Вы в главном меню", 
+            reply_markup=btn.markup)
+            await States.menu.set()
+        elif message.text.isdigit() and int(message.text) > 0:
+            folderList = await db.get_folders()
+            if int(message.text) <= len(folderList):
+                await cfg.addDataFolder.setFolder(message.from_user.id, folderList[int(message.text) - 1][0])
+                await cfg.bot.send_message(message.from_user.id, "Введите бандл нового приложения:", reply_markup=btn.back)
+                await States.addApp.set()
+            else:
+                await cfg.bot.send_message(message.from_user.id, "Указанная папка не найдена!")
+        else:
+            await cfg.bot.send_message(message.from_user.id, "Данные введены некорректно!")
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+@cfg.dp.message_handler(state=States.setOpenFolder) 
+async def setOpenFolder(message: types.Message):
+    if await checkUser(message.from_user.id):
+        if message.text == "Вернуться назад":
+            await cfg.bot.send_message(message.from_user.id, "Вы в главном меню", 
+            reply_markup=btn.markup)
+            await States.menu.set()
+        elif message.text.isdigit() and int(message.text) > 0:
+            folderList = await db.get_folders()
+            if int(message.text) <= len(folderList):
+                web = Web(folderList[int(message.text) - 1][0])
+                link = InlineKeyboardMarkup().add(InlineKeyboardButton('Перейти', url=web.url))
+                await cfg.bot.send_message(message.from_user.id, "Вы в главном меню", 
+                reply_markup=btn.markup)
+                await States.menu.set()
+                await cfg.bot.send_message(message.from_user.id, f"Ссылка на данные таблицы {folderList[int(message.text) - 1][0]}:", reply_markup=link)
+            else:
+                await cfg.bot.send_message(message.from_user.id, "Указанная папка не найдена!")
+        else:
+            await cfg.bot.send_message(message.from_user.id, "Данные введены некорректно!")
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+@cfg.dp.message_handler(state=States.users) 
+async def set_users(message: types.Message):
+    if await checkUser(message.from_user.id):
+        if message.text == "Вернуться назад":
+            await cfg.bot.send_message(message.from_user.id, "Вы в главном меню", 
+            reply_markup=btn.markup)
+            await States.menu.set()
+        if message.text == "Добавить пользователя":
+            await cfg.bot.send_message(message.from_user.id, "Введите id нового пользователя:", reply_markup=btn.back)
+            await States.addUser.set()
+        elif message.text == "Удалить пользователя":
+            await cfg.bot.send_message(message.from_user.id, f"Укажите номер ID пользователя, которого хотите удалить\n\nСписок пользователей:{await printUsers()}", reply_markup=btn.back)
+            await States.delUser.set()
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+# third
+
+@cfg.dp.message_handler(state=States.addFolder)
+async def add_folder(message: types.Message):
+    if await checkUser(message.from_user.id):
+        if message.text == "Вернуться назад":
+            await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
+            "\n\nСписок папок:{}".format(await printList()), 
+            reply_markup=btn.choose_folder)
+            await States.setFolder.set()
+        else:
+            if await db.check_folder(message.text):
+                await cfg.bot.send_message(message.from_user.id, "Папка с таким названием уже существует!")
+                return
+            await db.add_folder(message.text)
+            await cfg.bot.send_message(message.from_user.id, "Папка успешно создана")
+            await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
+            "\n\nСписок папок:{}".format(await printList()), 
+            reply_markup=btn.choose_folder)
+            await States.setFolder.set()
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+@cfg.dp.message_handler(state=States.delFolder) 
+async def delFolder(message: types.Message, state: FSMContext):
+    if await checkUser(message.from_user.id):
+        if message.text == "Вернуться назад":
+            await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
+            "\n\nСписок папок:{}".format(await printList()), 
+            reply_markup=btn.choose_folder)
+            await States.setFolder.set()
+        elif message.text.isdigit() and int(message.text) > 0:
+            folderList = await db.get_folders()
+            if int(message.text) <= len(folderList):
+                await db.delFolder(await db.get_foldersId(folderList[int(message.text) - 1][0]))
+                await cfg.bot.send_message(message.from_user.id, "Папка успешно удалена!")
+                await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
+                "\n\nСписок папок:{}".format(await printList()), 
+                reply_markup=btn.choose_folder)
+                await States.setFolder.set()
+            else:
+                await cfg.bot.send_message(message.from_user.id, "Указанная папка не найдена!")
+        else:
+            await cfg.bot.send_message(message.from_user.id, "Данные введены некорректно!")
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+
+@cfg.dp.message_handler(state=States.addApp)
+async def add_app(message: types.Message):
+    if await checkUser(message.from_user.id):
+        if message.text == "Вернуться назад":
+            await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
+            "\n\nСписок папок:{}".format(await printList()), 
+            reply_markup=btn.choose_folder)
+            await States.setFolder.set()
+        elif await db.checkCurrentApp(message.text):
+            await cfg.bot.send_message(message.from_user.id, f"Такое приложение уже существует в папке {await db.get_folder(message.text)}")
+            await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
+            "\n\nСписок папок:{}".format(await printList()), 
+            reply_markup=btn.choose_folder)
+            await States.setFolder.set()
+        else:
+            name = message.text
+            folders = await cfg.addDataFolder.getFolder()
+            status = await Track.trackNow(name)
+            await db.add_app(
+                appBundle=name,
+                status=status,
+                folder_id=await db.get_foldersId(folders.get(str(message.from_user.id))),
+                startTime=datetime.datetime.now(timezone('Europe/Kiev')).strftime("%d/%m/%y %H:%M:%S"),
+                nextTime=(datetime.datetime.now(timezone('Europe/Kiev')) + datetime.timedelta(hours=4)).strftime("%d/%m/%y %H:%M:%S")
+            )
+            await cfg.bot.send_message(message.from_user.id, "Бандл '{}'\nуспешно добавлен в папку {}\n\nСтатус приложения: {}".format(name, folders.get(str(message.from_user.id)), status))
+            await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
+            "\n\nСписок папок:{}".format(await printList()), 
+            reply_markup=btn.choose_folder)
+            await States.setFolder.set()
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+@cfg.dp.message_handler(state=States.addUser) 
+async def add_user(message: types.Message):
+    if await checkUser(message.from_user.id):
+        if message.text == "Вернуться назад":
+            await cfg.bot.send_message(message.from_user.id, "Выберите операцию над пользователями:", reply_markup=btn.user_markup)
+            await States.users.set()
+        else:
+            await cfg.addDataUser.addUser(message.text)
+            await cfg.bot.send_message(message.from_user.id, "Пользователь успешно добавлен !")
+            await cfg.bot.send_message(message.from_user.id, "Выберите операцию над пользователями:", reply_markup=btn.user_markup)
+            await States.users.set()
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+@cfg.dp.message_handler(state=States.delUser) 
+async def del_user(message: types.Message):
+    if await checkUser(message.from_user.id):
+        if message.text == "Вернуться назад":
+            await cfg.bot.send_message(message.from_user.id, "Выберите операцию над пользователями:", reply_markup=btn.user_markup)
+            await States.users.set()
+        elif message.text.isdigit() and int(message.text) > 0:
+            UsersList = await cfg.addDataUser.getUsers()
+            if int(message.text) <= len(UsersList):
+                await cfg.addDataUser.delUser(UsersList[int(message.text) - 1])
+                await cfg.bot.send_message(message.from_user.id, "ID пользователя успешно удалён !")
+                await cfg.bot.send_message(message.from_user.id, "Выберите операцию над пользователями:", reply_markup=btn.user_markup)
+                await States.users.set()
+            else:
+                await cfg.bot.send_message(message.from_user.id, "Указанный id пользователя не найдена!")
+        else:
+            await cfg.bot.send_message(message.from_user.id, "Данные введены некорректно!")
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+
+async def printList():
+    folders = ""
+    index = 0
+    for folder in await db.get_folders():
+        index += 1
+        folder = "\n{}. ".format(index) + folder[0]
+        folders += folder
+    if folders == "":
+        folders = " cписок пуст\n\nДля добавления создайте папку!"
+    return folders
+
+async def printUsers():
+    users = ""
+    index = 0
+    for user in await cfg.addDataUser.getUsers():
+        index += 1
+        user = "\n{}. ".format(index) + user
+        users += user
+    if users == "":
+        users = " cписок пользователей пуст!"
+    return users
+
+async def checkUser(user_id):
+    for user in await cfg.addDataUser.getUsers():
+        if str(user) == str(user_id):
+            return True
+    return False
+
+async def scheduler_users():
+    aioschedule.every(3).seconds.do(Track.tracking)
+    while True:
+        await aioschedule.run_pending()
+        await asyncio.sleep(1)
+
+# Run function with await
+async def on_startup(_):
+    asyncio.create_task(scheduler_users())
+
+if __name__ == "__main__":
+    executor.start_polling(cfg.dp, skip_updates=True, on_startup=on_startup)
