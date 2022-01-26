@@ -7,8 +7,6 @@ class States(state.StatesGroup):
     addApp = state.State()
     setOpenFolder = state.State()
 
-    menu = state.State()
-
     users = state.State()
     addUser = state.State()
     delUser = state.State()

@@ -10,7 +10,8 @@ users = Config()
 class Track:
     async def tracking():
         for bundle in await db.getBundles():
-            if datetime.datetime.now(timezone('Europe/Kiev')) > datetime.datetime.strptime(bundle[3], "%d/%m/%y %H:%M:%S"):
+            nowTime = datetime.datetime.now(timezone('Europe/Kiev')).strftime("%d/%m/%y %H:%M:%S")
+            if datetime.datetime.strptime(nowTime, "%d/%m/%y %H:%M:%S") > datetime.datetime.strptime(bundle[3], "%d/%m/%y %H:%M:%S"):
                 await db.updateTime(bundle[0], datetime.datetime.now(timezone('Europe/Kiev')).strftime("%d/%m/%y %H:%M:%S"), 
                 (datetime.datetime.now(timezone('Europe/Kiev')) + datetime.timedelta(hours=4)).strftime("%d/%m/%y %H:%M:%S"))
                 try:
@@ -22,8 +23,8 @@ class Track:
                     if bundle[2] == "Не опубликован":
                         for user in await users.addDataUser.getUsers():
                             try:
-                                await users.bot.send_message(user, "Обновление статуса приложения!" +
-                                "\n\nПриложение {} было добавлено в Play Market!".format(bundle[1]))
+                                await users.bot.send_message(user, "✅ Обновление статуса приложения!" +
+                                "\n\nПриложение {}\n\nиз папки {}\n\nбыло добавлено в Play Market!".format(bundle[1], await db.get_folder(bundle[1])))
                             except:
                                 pass
                         await db.updateStatus("Опубликован", bundle[0])
@@ -31,8 +32,8 @@ class Track:
                     if bundle[2] == "Опубликован":
                         for user in await users.addDataUser.getUsers():
                             try:
-                                await users.bot.send_message(user, "Обновление статуса приложения!" +
-                                "\n\nПриложение {} было удалено из Play Market!".format(bundle[1]))
+                                await users.bot.send_message(user, "❌ Обновление статуса приложения!" +
+                                "\n\nПриложение {}\n\nиз папки {}\n\nбыло удалено из Play Market!".format(bundle[1], await db.get_folder(bundle[1])))
                             except:
                                 pass
                         await db.updateStatus("Не опубликован", bundle[0])
@@ -49,8 +50,8 @@ class Track:
                 if bundle[2] == "Не опубликован":
                     for user in await users.addDataUser.getUsers():
                         try:
-                            await users.bot.send_message(user, "Обновление статуса приложения!" +
-                            "\n\nПриложение {} было добавлено в Play Market!".format(bundle[1]))
+                            await users.bot.send_message(user, "✅ Обновление статуса приложения!" +
+                                "\n\nПриложение {}\n\nиз папки {}\n\nбыло добавлено в Play Market!".format(bundle[1], await db.get_folder(bundle[1])))
                         except:
                             pass
                     await db.updateStatus("Опубликован", bundle[0])
@@ -58,8 +59,8 @@ class Track:
                 if bundle[2] == "Опубликован":
                     for user in await users.addDataUser.getUsers():
                         try:
-                            await users.bot.send_message(user, "Обновление статуса приложения!" +
-                            "\n\nПриложение {} было удалено из Play Market!".format(bundle[1]))
+                            await users.bot.send_message(user, "❌ Обновление статуса приложения!" +
+                            "\n\nПриложение {}\n\nиз папки {}\n\nбыло удалено из Play Market!".format(bundle[1], await db.get_folder(bundle[1])))
                         except:
                             pass
                     await db.updateStatus("Не опубликован", bundle[0])
