@@ -1,5 +1,5 @@
 """
-WSGI config for bundles project.
+WSGI config for bundles_checker project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bundles.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bundles_checker.settings')
 
 application = get_wsgi_application()

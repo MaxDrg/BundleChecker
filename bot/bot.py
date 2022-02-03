@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from sre_parse import State
 import aioschedule
 import datetime
 from config import Config
@@ -201,13 +202,16 @@ async def add_app(message: types.Message):
             "\n\nСписок папок:{}".format(await printList()), 
             reply_markup=btn.choose_folder)
             await States.setFolder.set()
+            return
+        old_apps = []
         new_bundles = message.text.split('\n')
+        folders = await cfg.addDataFolder.getFolder()
         for new_bundle in new_bundles:
             if await db.checkCurrentApp(new_bundle):
+                old_apps.append(new_bundle)
                 await cfg.bot.send_message(message.from_user.id, f"Приложение {new_bundle} уже существует в папке {await db.get_folder(new_bundle)}")
             else:
                 name = new_bundle
-                folders = await cfg.addDataFolder.getFolder()
                 status = await Track.trackNow(name)
                 await db.add_app(
                     appBundle=name,
@@ -217,10 +221,22 @@ async def add_app(message: types.Message):
                     nextTime=(datetime.datetime.now(timezone('Europe/Kiev')) + datetime.timedelta(hours=4)).strftime("%d/%m/%y %H:%M:%S")
                 )
                 await cfg.bot.send_message(message.from_user.id, "Бандл '{}'\nуспешно добавлен в папку {}\n\nСтатус приложения: {}".format(name, folders.get(str(message.from_user.id)), status))
-        await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
-        "\n\nСписок папок:{}".format(await printList()), 
-        reply_markup=btn.choose_folder)
-        await States.setFolder.set()
+        if old_apps:
+            app_list = ''
+            await cfg.addDataApps.add_app(message.from_user.id, 
+                folders.get(str(message.from_user.id)),
+                old_apps)
+            for old_app in old_apps:
+                app_list += old_app + "\n"
+            await cfg.bot.send_message(message.from_user.id, f"Приложения\n\n{app_list}\nуже существуют в других папках." +
+            "\n\nXотите перенести их в текущую папку?", 
+            reply_markup=btn.change_folder )
+            await States.changeFolder.set()
+        else:
+            await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
+            "\n\nСписок папок:{}".format(await printList()), 
+            reply_markup=btn.choose_folder)
+            await States.setFolder.set()
     else:
         await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
         " этот бот для вас недоступен, обратитесь к администратору :(")
@@ -236,6 +252,26 @@ async def add_user(message: types.Message):
             await cfg.bot.send_message(message.from_user.id, "Пользователь успешно добавлен !")
             await cfg.bot.send_message(message.from_user.id, "Выберите операцию над пользователями:", reply_markup=btn.user_markup)
             await States.users.set()
+    else:
+        await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
+        " этот бот для вас недоступен, обратитесь к администратору :(")
+    
+@cfg.dp.message_handler(state=States.changeFolder) 
+async def change_folder(message: types.Message):
+    if await checkUser(message.from_user.id):
+        if message.text == 'Да':
+            response = await cfg.addDataApps.change_apps(message.from_user.id)
+            folder = await db.get_foldersId(response['folder'])
+            app_list = ''
+            for app in response['apps']:
+                await db.change_folder(folder, app)
+                app_list += app + "\n"
+            await cfg.bot.send_message(message.from_user.id, f"Приложения\n\n{app_list}\n" +
+                f"были добавлены в папку {response['folder']}")
+        await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
+            "\n\nСписок папок:{}".format(await printList()), 
+            reply_markup=btn.choose_folder)
+        await States.setFolder.set()
     else:
         await cfg.bot.send_message(message.from_user.id, "К сожалению,".format(message.from_user.first_name) +
         " этот бот для вас недоступен, обратитесь к администратору :(")

@@ -12,21 +12,23 @@
                 <td>Номер</td>
                 <td>Выбрать</td>
                 <td>Название</td>
-                <td>Дата/время добавления</td>
                 <td>Статус</td>
-                <td>Последнее обновление</td>
+                <td>Дата/время добавления</td>
+                <td>Последнее обновление приложения</td>
+                <td>Последнее обновление статуса</td>
         </tr>
         {% for obj in data %}
             <tr>
                 <td>{{ forloop.counter }}</td>
                 <td><input type="checkbox" name="dataList" value={{ obj.id }}></td>
                 <td>{{ obj.app_name }}</td>
-                <td>{{ obj.start_time }}</td>
                 {% if obj.status == "Опубликован" %}
                         <td>&#9989; {{ obj.status }}</td>
                 {% else %}
                         <td>&#10060; {{ obj.status }}</td>
                 {% endif %}
+                <td>{{ obj.start_time }}</td>
+                <td>{{ obj.last_update }}</td>
                 <td>{{ obj.last_time }}</td>
             </tr>
         {% endfor %}

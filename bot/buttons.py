@@ -19,3 +19,7 @@ class Button:
         button_create_folder = KeyboardButton('Создать новую папку')
         button_delete_folder = KeyboardButton('Удалить папку')
         self.choose_folder = ReplyKeyboardMarkup(resize_keyboard=True).row(button_create_folder).row(button_delete_folder).row(button_back)
+
+        button_yes = KeyboardButton('Да')
+        button_no = KeyboardButton('Нет')
+        self.change_folder = ReplyKeyboardMarkup(resize_keyboard=True).row(button_yes, button_no)

@@ -54,7 +54,7 @@ class Database:
 
 	async def getBundles(self):
 		with self.conn.cursor() as cursor:
-			cursor.execute("""SELECT id, app_name, status, next_check FROM apps_apps;""")
+			cursor.execute("""SELECT id, app_name, status, next_check, last_update FROM apps_apps;""")
 			return cursor.fetchall()
 
 	async def updateStatus(self, str: str, id: int):
@@ -82,3 +82,13 @@ class Database:
 		with self.conn.cursor() as cursor:
 			cursor.execute("""SELECT EXISTS(SELECT id FROM apps_apps WHERE app_name = %s);""", (name, ))
 			return cursor.fetchone()[0]
+
+	async def change_folder(self, folder_id, app_name):
+		with self.conn.cursor() as cursor:
+			cursor.execute("""UPDATE apps_apps SET folder_id = %s WHERE app_name = %s;""", (folder_id, app_name, ))
+		self.conn.commit()
+
+	async def change_last_update(self, new_update, app_id):
+		with self.conn.cursor() as cursor:
+			cursor.execute("""UPDATE apps_apps SET last_update = %s WHERE id = %s;""", (new_update, app_id, ))
+		self.conn.commit()

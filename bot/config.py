@@ -1,5 +1,5 @@
 from aiogram import Bot, Dispatcher
-from jsonData import Folder, Users
+from jsonData import Folder, Users, Apps
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 import os
 
@@ -10,6 +10,7 @@ class Config:
 
         self.addDataFolder = Folder(file=os.environ.get('DATA_FOLDERS'))
         self.addDataUser = Users(file=os.environ.get('DATA_USERS'))
+        self.addDataApps = Apps(file=os.environ.get('DATA_APPS'))
 
         self.host = os.environ.get('HOST')
         self.port = os.environ.get('PORT')

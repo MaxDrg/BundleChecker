@@ -6,6 +6,7 @@ class States(state.StatesGroup):
     delFolder = state.State()
     addApp = state.State()
     setOpenFolder = state.State()
+    changeFolder = state.State()
 
     users = state.State()
     addUser = state.State()
