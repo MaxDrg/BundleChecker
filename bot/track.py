@@ -79,11 +79,7 @@ class Track:
 
     async def trackNow(newBundle):
         try:
-            result = app(
-                newBundle, 
-                lang = 'ru' ,  # по умолчанию 'en' 
-                country = 'ru'  # по умолчанию 'us' 
-            )
+            play_scraper.details(newBundle)['updated']
             return "Опубликован"
         except:
             return "Не опубликован"
