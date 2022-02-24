@@ -1,10 +1,9 @@
 import asyncio
 import logging
-from sre_parse import State
 import aioschedule
 import datetime
 from config import Config
-from database import Database
+from database import Database, CRM
 from buttons import Button
 from track import Track
 from states import States
@@ -20,6 +19,7 @@ logging.basicConfig(level=logging.INFO)
 cfg = Config()
 btn = Button()
 db = Database()
+crm = CRM()
 
 # first
 @cfg.dp.message_handler(commands="start")
@@ -181,6 +181,7 @@ async def delFolder(message: types.Message, state: FSMContext):
             if int(message.text) <= len(folderList):
                 await db.delFolder(await db.get_foldersId(folderList[int(message.text) - 1][0]))
                 await cfg.bot.send_message(message.from_user.id, "Папка успешно удалена!")
+                await crm.del_folder(folderList[int(message.text) - 1][0])
                 await cfg.bot.send_message(message.from_user.id, "Введите номер папки для нового приложения или создайте новую" + 
                 "\n\nСписок папок:{}".format(await printList()), 
                 reply_markup=btn.choose_folder)
@@ -220,6 +221,7 @@ async def add_app(message: types.Message):
                     startTime=datetime.datetime.now(timezone('Europe/Kiev')).strftime("%d/%m/%y %H:%M:%S"),
                     nextTime=(datetime.datetime.now(timezone('Europe/Kiev')) + datetime.timedelta(hours=4)).strftime("%d/%m/%y %H:%M:%S")
                 )
+                await crm.add_app(name, datetime.datetime.now(timezone('Europe/Kiev')), folders.get(str(message.from_user.id)))
                 await cfg.bot.send_message(message.from_user.id, "Бандл '{}'\nуспешно добавлен в папку {}\n\nСтатус приложения: {}".format(name, folders.get(str(message.from_user.id)), status))
         if old_apps:
             app_list = ''
@@ -265,6 +267,7 @@ async def change_folder(message: types.Message):
             app_list = ''
             for app in response['apps']:
                 await db.change_folder(folder, app)
+                await crm.change_folder(app, response['folder'])
                 app_list += app + "\n"
             await cfg.bot.send_message(message.from_user.id, f"Приложения\n\n{app_list}\n" +
                 f"были добавлены в папку {response['folder']}")
