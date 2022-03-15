@@ -49,6 +49,11 @@ class Database:
 			cursor.execute("""SELECT id FROM apps_folders WHERE name_folder = %s;""", (str(folderName), ))
 			return cursor.fetchone()[0]
 
+	async def get_status(self, app_id: str):
+		with self.conn.cursor() as cursor:
+			cursor.execute("""SELECT status FROM apps_apps WHERE app_name = %s;""", (str(app_id), ))
+			return cursor.fetchone()[0]
+
 	async def check_folder(self, folderName: str):
 		with self.conn.cursor() as cursor:
 			cursor.execute("""SELECT EXISTS(SELECT id FROM apps_folders WHERE name_folder = %s);""", (folderName, ))

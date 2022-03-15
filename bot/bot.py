@@ -210,7 +210,7 @@ async def add_app(message: types.Message):
         for new_bundle in new_bundles:
             if await db.checkCurrentApp(new_bundle):
                 old_apps.append(new_bundle)
-                await cfg.bot.send_message(message.from_user.id, f"Приложение {new_bundle} уже существует в папке {await db.get_folder(new_bundle)}")
+                await cfg.bot.send_message(message.from_user.id, f'Приложение {new_bundle} уже существует в папке {await db.get_folder(new_bundle)} со статусом "{await db.get_status(new_bundle)}"')
             else:
                 name = new_bundle
                 status = await Track.trackNow(name)
