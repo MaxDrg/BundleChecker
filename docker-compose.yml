@@ -22,6 +22,6 @@ services:
   nginx:
     build: ./nginx
     ports:
-      - 80:80
+      - 80:84
     depends_on:
       - web
