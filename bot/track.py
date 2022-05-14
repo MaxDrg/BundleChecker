@@ -16,16 +16,17 @@ class Track:
                 (datetime.datetime.now(timezone('Europe/Kiev')) + datetime.timedelta(hours=4)).strftime("%d/%m/%y %H:%M:%S"))
                 try:
                     app_data = app(bundle[1])['updated']
-                    update_time = datetime.datetime.utcfromtimestamp(int(app_data)).strftime("%d %B, %Y")
-                    if not update_time == bundle[4]:
-                        if not bundle[4] == 'Не существует':
-                            for user in await users.addDataUser.getUsers():
-                                try:
-                                    await users.bot.send_message(user, f"🔄 Приложение {bundle[1]} поменяло дату обновления" +
-                                    f" на {update_time}")
-                                except:
-                                    pass
-                        await db.change_last_update(update_time, bundle[0])
+                    if not app_data == None:
+                        update_time = datetime.datetime.utcfromtimestamp(int(app_data)).strftime("%d %B, %Y")
+                        if not update_time == bundle[4]:
+                            if not bundle[4] == 'Не существует':
+                                for user in await users.addDataUser.getUsers():
+                                    try:
+                                        await users.bot.send_message(user, f"🔄 Приложение {bundle[1]} поменяло дату обновления" +
+                                        f" на {update_time}")
+                                    except:
+                                        pass
+                            await db.change_last_update(update_time, bundle[0])
                     if bundle[2] == "Не опубликован":
                         for user in await users.addDataUser.getUsers():
                             try:
@@ -50,17 +51,17 @@ class Track:
             await db.updateLastTime(bundle[0], datetime.datetime.now(timezone('Europe/Kiev')).strftime("%d/%m/%y %H:%M:%S"))
             try:
                 app_data = app(bundle[1])['updated']
-                print(app_data)
-                update_time = datetime.datetime.utcfromtimestamp(int(app_data)).strftime("%d %B, %Y")
-                if not update_time == bundle[4]:
-                    if not bundle[4] == 'Не существует':
-                        for user in await users.addDataUser.getUsers():
-                            try:
-                                await users.bot.send_message(user, f"🔄 Приложение {bundle[1]} поменяло дату обновления" +
-                                f" на {update_time}")
-                            except:
-                                pass
-                    await db.change_last_update(update_time, bundle[0])
+                if not app_data == None:
+                    update_time = datetime.datetime.utcfromtimestamp(int(app_data)).strftime("%d %B, %Y")
+                    if not update_time == bundle[4]:
+                        if not bundle[4] == 'Не существует':
+                            for user in await users.addDataUser.getUsers():
+                                try:
+                                    await users.bot.send_message(user, f"🔄 Приложение {bundle[1]} поменяло дату обновления" +
+                                    f" на {update_time}")
+                                except:
+                                    pass
+                        await db.change_last_update(update_time, bundle[0])
                 if bundle[2] == "Не опубликован":
                     for user in await users.addDataUser.getUsers():
                         try:
@@ -80,8 +81,6 @@ class Track:
                         except:
                             pass
                     await db.updateStatus("Не опубликован", bundle[0])
-        
-
 
     async def trackNow(newBundle):
         try:
