@@ -50,6 +50,7 @@ class Track:
             await db.updateLastTime(bundle[0], datetime.datetime.now(timezone('Europe/Kiev')).strftime("%d/%m/%y %H:%M:%S"))
             try:
                 app_data = app(bundle[1])['updated']
+                print(app_data)
                 update_time = datetime.datetime.utcfromtimestamp(int(app_data)).strftime("%d %B, %Y")
                 if not update_time == bundle[4]:
                     if not bundle[4] == 'Не существует':
