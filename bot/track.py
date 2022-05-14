@@ -13,6 +13,7 @@ class Track:
     async def tracking():
         for bundle in await db.getBundles():
             nowTime = datetime.datetime.now(timezone('Europe/Kiev')).strftime("%d/%m/%y %H:%M:%S")
+            await asyncio.sleep(0.5)
             if datetime.datetime.strptime(nowTime, "%d/%m/%y %H:%M:%S") > datetime.datetime.strptime(bundle[3], "%d/%m/%y %H:%M:%S"):
                 await db.updateTime(bundle[0], datetime.datetime.now(timezone('Europe/Kiev')).strftime("%d/%m/%y %H:%M:%S"), 
                 (datetime.datetime.now(timezone('Europe/Kiev')) + datetime.timedelta(hours=4)).strftime("%d/%m/%y %H:%M:%S"))
@@ -49,10 +50,9 @@ class Track:
     async def update():
         for bundle in await db.getBundles():
             await db.updateLastTime(bundle[0], datetime.datetime.now(timezone('Europe/Kiev')).strftime("%d/%m/%y %H:%M:%S"))
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
             try:
                 update_time = play_scraper.details(bundle[1])['updated']
-                print(update_time)
                 if not update_time == bundle[4]:
                     if not bundle[4] == 'Не существует':
                         for user in await users.addDataUser.getUsers():
