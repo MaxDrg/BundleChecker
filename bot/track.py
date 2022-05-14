@@ -72,6 +72,7 @@ class Track:
                 if bundle[2] == "Опубликован":
                     for user in await users.addDataUser.getUsers():
                         try:
+                            print(bundle[1])
                             await users.bot.send_message(user, "❌ Обновление статуса приложения!" +
                             "\n\nПриложение {}\n\nиз папки {}\n\nбыло удалено из Play Market!".format(bundle[1], await db.get_folder(bundle[1])))
                         except:
