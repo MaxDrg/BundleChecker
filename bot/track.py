@@ -33,7 +33,8 @@ class Track:
                             except:
                                 pass
                         await db.updateStatus("Опубликован", bundle[0])
-                except:
+                except Exception as e:
+                    print(e)
                     if bundle[2] == "Опубликован":
                         for user in await users.addDataUser.getUsers():
                             try:
