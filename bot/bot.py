@@ -329,7 +329,7 @@ async def checkUser(user_id):
     return False
 
 async def scheduler_users():
-    aioschedule.every().hour.do(Track.tracking)
+    aioschedule.every(4).hours.do(Track.tracking)
     while True:
         await aioschedule.run_pending()
         await asyncio.sleep(1)
