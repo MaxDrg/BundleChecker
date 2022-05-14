@@ -16,6 +16,7 @@ class Track:
                 (datetime.datetime.now(timezone('Europe/Kiev')) + datetime.timedelta(hours=4)).strftime("%d/%m/%y %H:%M:%S"))
                 try:   
                     update_time = play_scraper.details(bundle[1])['updated']
+                    print(update_time)
                     if not update_time == bundle[4]:
                         if not bundle[4] == 'Не существует':
                             for user in await users.addDataUser.getUsers():
