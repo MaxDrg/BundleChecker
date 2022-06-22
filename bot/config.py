@@ -23,9 +23,9 @@ class Config:
         self.host_data = os.environ.get('HOST')
         self.port_data = os.environ.get('DATA_PORT')
 
-        self.crm_database = os.environ.get('CRM_DATABASE')
-        self.crm_user_data = os.environ.get('CRM_DATA_USER')
-        self.crm_password_data = os.environ.get('CRM_DATA_PASS')
+        # self.crm_database = os.environ.get('CRM_DATABASE')
+        # self.crm_user_data = os.environ.get('CRM_DATA_USER')
+        # self.crm_password_data = os.environ.get('CRM_DATA_PASS')
 
         self.app_spy_token = os.environ.get('APPSTORESPY_TOKEN')
         self.app_spy_url = os.environ.get('APPSTORESPY_URL')

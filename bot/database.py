@@ -100,64 +100,64 @@ class Database:
 			cursor.execute("""UPDATE apps_apps SET last_update = %s WHERE id = %s;""", (new_update, app_id, ))
 		self.conn.commit()
 
-class CRM: 
-	def __init__(self):
-		try:
-			ssh = paramiko.SSHClient()
-			ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-			ssh.connect(cfg.host, port=cfg.port, username=cfg.username, password=cfg.passw)
-			print("A connection to the server has been established")
-			self.conn = psycopg2.connect(
-  				database = cfg.crm_database,
-				user = cfg.crm_user_data,
-				password = cfg.crm_password_data,
-				host = cfg.host_data,
-				port = cfg.port_data
-			)
-			print ("Database connection established")
-		except Exception as err:
-			print(str(err))
-
-	async def get_devs(self):
-		with self.conn.cursor() as cursor:
-			cursor.execute("""SELECT dev FROM crm_developers;""")
-			return cursor.fetchall()
-
-	async def check_folder(self, folder_name: str):
-		with self.conn.cursor() as cursor:
-			cursor.execute("""SELECT EXISTS(SELECT id FROM crm_folders WHERE folder_name = %s);""", (folder_name, ))
-			return cursor.fetchone()[0]
-
-	async def add_app(self, app_id, add_time, folder_name):
-		app_name = ''
-		last_update = ''
-		installs = 0
-		status = False
-		if not await self.check_folder(folder_name):
-			with self.conn.cursor() as cursor:
-				cursor.execute("""INSERT INTO crm_folders (folder_name) VALUES (%s);""", (folder_name, ))
-			self.conn.commit()
-		for dev in await self.get_devs():
-			dev = {'dev': dev[0]}
-			params = urllib.parse.urlencode(dev, quote_via=urllib.parse.quote)
-			headers = {"Authorization": f"Bearer {cfg.app_spy_token}"}
-			response = requests.get(cfg.app_spy_url, headers=headers, params=params)
-			for data in response.json()['data']:
-				if data['id'] == app_id:
-					app_name = data['name']
-					last_update = data['updated']
-					installs = data['installs_exact']
-					status = data['available']
-		if not last_update:
-			with self.conn.cursor() as cursor:
-				cursor.execute("""INSERT INTO crm_apps (app_id, add_time, folder_id) VALUES (%s, %s, (SELECT id FROM crm_folders WHERE folder_name = %s));""", (app_id, add_time, folder_name,))
-			self.conn.commit()
-		else:
-			with self.conn.cursor() as cursor:
-				cursor.execute("""INSERT INTO crm_apps (app_id, add_time, folder_id, app_name, last_update, installs, status) VALUES (%s, %s, (SELECT id FROM crm_folders WHERE folder_name = %s), %s, %s, %s, %s);""", (app_id, add_time, folder_name, app_name, last_update, installs, status, ))
-			self.conn.commit()
-
-	async def change_folder(self, app_id: str ,folder_name: str):
-		with self.conn.cursor() as cursor:
-			cursor.execute("""UPDATE crm_apps SET folder_id = (SELECT id FROM crm_folders WHERE folder_name = %s) WHERE app_id = %s;""", (folder_name, app_id, ))
-		self.conn.commit()
+# class CRM: 
+# 	def __init__(self):
+# 		try:
+# 			ssh = paramiko.SSHClient()
+# 			ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+# 			ssh.connect(cfg.host, port=cfg.port, username=cfg.username, password=cfg.passw)
+# 			print("A connection to the server has been established")
+# 			self.conn = psycopg2.connect(
+#   				database = cfg.crm_database,
+# 				user = cfg.crm_user_data,
+# 				password = cfg.crm_password_data,
+# 				host = cfg.host_data,
+# 				port = cfg.port_data
+# 			)
+# 			print ("Database connection established")
+# 		except Exception as err:
+# 			print(str(err))
+# 
+# 	async def get_devs(self):
+# 		with self.conn.cursor() as cursor:
+# 			cursor.execute("""SELECT dev FROM crm_developers;""")
+# 			return cursor.fetchall()
+# 
+# 	async def check_folder(self, folder_name: str):
+# 		with self.conn.cursor() as cursor:
+# 			cursor.execute("""SELECT EXISTS(SELECT id FROM crm_folders WHERE folder_name = %s);""", (folder_name, ))
+# 			return cursor.fetchone()[0]
+# 
+# 	async def add_app(self, app_id, add_time, folder_name):
+# 		app_name = ''
+# 		last_update = ''
+# 		installs = 0
+# 		status = False
+# 		if not await self.check_folder(folder_name):
+# 			with self.conn.cursor() as cursor:
+# 				cursor.execute("""INSERT INTO crm_folders (folder_name) VALUES (%s);""", (folder_name, ))
+# 			self.conn.commit()
+# 		for dev in await self.get_devs():
+# 			dev = {'dev': dev[0]}
+# 			params = urllib.parse.urlencode(dev, quote_via=urllib.parse.quote)
+# 			headers = {"Authorization": f"Bearer {cfg.app_spy_token}"}
+# 			response = requests.get(cfg.app_spy_url, headers=headers, params=params)
+# 			for data in response.json()['data']:
+# 				if data['id'] == app_id:
+# 					app_name = data['name']
+# 					last_update = data['updated']
+# 					installs = data['installs_exact']
+# 					status = data['available']
+# 		if not last_update:
+# 			with self.conn.cursor() as cursor:
+# 				cursor.execute("""INSERT INTO crm_apps (app_id, add_time, folder_id) VALUES (%s, %s, (SELECT id FROM crm_folders WHERE folder_name = %s));""", (app_id, add_time, folder_name,))
+# 			self.conn.commit()
+# 		else:
+# 			with self.conn.cursor() as cursor:
+# 				cursor.execute("""INSERT INTO crm_apps (app_id, add_time, folder_id, app_name, last_update, installs, status) VALUES (%s, %s, (SELECT id FROM crm_folders WHERE folder_name = %s), %s, %s, %s, %s);""", (app_id, add_time, folder_name, app_name, last_update, installs, status, ))
+# 			self.conn.commit()
+# 
+# 	async def change_folder(self, app_id: str ,folder_name: str):
+# 		with self.conn.cursor() as cursor:
+# 			cursor.execute("""UPDATE crm_apps SET folder_id = (SELECT id FROM crm_folders WHERE folder_name = %s) WHERE app_id = %s;""", (folder_name, app_id, ))
+# 		self.conn.commit()
